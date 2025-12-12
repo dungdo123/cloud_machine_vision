@@ -1,0 +1,26 @@
+{
+  "display": {
+    "show_anomaly_map": true,
+    "show_decision": true,
+    "show_score": true,
+    "show_timestamp": true
+  },
+  
+  "colors": {
+    "pass": "#00FF00",
+    "fail": "#FF0000",
+    "review": "#FFA500"
+  },
+  
+  "border": {
+    "thickness": 10,
+    "show": true
+  },
+  
+  "text": {
+    "font_scale": 1.0,
+    "position": "top-left",
+    "background": true
+  }
+}
+

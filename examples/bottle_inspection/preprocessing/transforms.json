@@ -1,0 +1,42 @@
+{
+  "pipeline": [
+    {
+      "op": "resize",
+      "params": {
+        "width": 256,
+        "height": 256,
+        "interpolation": "bilinear",
+        "keep_aspect": false
+      },
+      "enabled": true
+    },
+    {
+      "op": "bgr2rgb",
+      "params": {},
+      "enabled": true
+    },
+    {
+      "op": "normalize",
+      "params": {
+        "mean": [0.485, 0.456, 0.406],
+        "std": [0.229, 0.224, 0.225],
+        "scale": 255.0
+      },
+      "enabled": true
+    },
+    {
+      "op": "to_tensor",
+      "params": {
+        "dtype": "float32",
+        "channel_order": "CHW"
+      },
+      "enabled": true
+    },
+    {
+      "op": "add_batch_dim",
+      "params": {},
+      "enabled": true
+    }
+  ]
+}
+

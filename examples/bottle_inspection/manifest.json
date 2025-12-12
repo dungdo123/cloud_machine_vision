@@ -1,0 +1,52 @@
+{
+  "mvas_version": "1.0.0",
+  
+  "app": {
+    "id": "bottle-inspection-v1",
+    "name": "Bottle Cap Inspection",
+    "version": "1.0.0",
+    "description": "Detects defects on bottle caps using PatchCore anomaly detection",
+    "author": "MVAS Example",
+    "created": "2025-12-12T00:00:00Z",
+    "tags": ["anomaly", "manufacturing", "quality", "bottle"]
+  },
+  
+  "model": {
+    "type": "anomaly_detection",
+    "algorithm": "patchcore",
+    "framework": "onnx",
+    "path": "model/model.onnx",
+    "additional_files": {},
+    "runtime": {
+      "device": "auto",
+      "precision": "fp32",
+      "batch_size": 1,
+      "num_threads": 4
+    }
+  },
+  
+  "input": {
+    "type": "image",
+    "color_mode": "RGB",
+    "resolution": {
+      "width": 256,
+      "height": 256
+    },
+    "preprocessing": "preprocessing/transforms.json",
+    "roi_mask": null
+  },
+  
+  "output": {
+    "type": "anomaly_map",
+    "postprocessing": "postprocessing/rules.json",
+    "save_images": true,
+    "save_visualizations": true
+  },
+  
+  "requirements": {
+    "min_mvas_version": "1.0.0",
+    "gpu_required": false,
+    "min_memory_mb": 512
+  }
+}
+

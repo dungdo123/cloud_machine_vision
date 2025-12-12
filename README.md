@@ -1,0 +1,270 @@
+# MVAS - Machine Vision Application Standard
+
+A plug-and-play framework for deploying machine vision applications in industrial environments.
+
+## Features
+
+- 📦 **Portable Application Packages** - Self-contained `.mvapp` files
+- 🔌 **Universal Camera Support** - GigE Vision, USB, RTSP, Folder watching
+- ⚡ **Multiple Inference Backends** - ONNX, TorchScript, TensorRT, OpenVINO
+- 🌐 **REST & WebSocket APIs** - Easy integration with existing systems
+- 📊 **Real-time Monitoring** - Live dashboards and metrics
+- 🔄 **Hot-swap Applications** - Change models without restart
+
+## Quick Start
+
+### Installation
+
+```bash
+# Clone/copy the MVAS directory
+cd mvas
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+# or
+.\venv\Scripts\activate  # Windows
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### Start the Server
+
+```bash
+# Using CLI
+python -m mvas_cli.cli serve
+
+# Or directly with uvicorn
+uvicorn mvas_runtime.server:app --host 0.0.0.0 --port 8000
+```
+
+### Use the Python SDK
+
+```python
+from mvas_sdk import MVASClient
+
+# Connect to server
+client = MVASClient("http://localhost:8000")
+
+# Load an application
+app = client.load_app("/path/to/app.mvapp")
+print(f"Loaded: {app.name}")
+
+# Run inspection
+result = client.inspect(app.id, image_path="test.jpg")
+print(f"Decision: {result.decision}")
+print(f"Anomaly Score: {result.anomaly_score:.4f}")
+```
+
+### Use the REST API
+
+```bash
+# Load an application
+curl -X POST http://localhost:8000/api/v1/apps/load \
+  -H "Content-Type: application/json" \
+  -d '{"app_path": "/apps/bottle_inspection.mvapp"}'
+
+# Run inspection with base64 image
+curl -X POST http://localhost:8000/api/v1/inspect \
+  -H "Content-Type: application/json" \
+  -d '{
+    "app_id": "bottle-inspection-v1",
+    "image_base64": "/9j/4AAQSkZJRg..."
+  }'
+
+# Or upload a file
+curl -X POST "http://localhost:8000/api/v1/inspect/upload?app_id=bottle-inspection-v1" \
+  -F "file=@test.jpg"
+```
+
+## Creating Applications
+
+### 1. Initialize a New Project
+
+```bash
+python -m mvas_cli.cli init my_inspection_app
+```
+
+This creates:
+```
+my_inspection_app/
+├── manifest.json
+├── model/
+├── preprocessing/
+│   └── transforms.json
+├── postprocessing/
+│   └── rules.json
+├── assets/
+└── ui/
+```
+
+### 2. Add Your Model
+
+Copy your trained model to the `model/` directory:
+- For ONNX: `model/model.onnx`
+- For TorchScript: `model/model.pt`
+
+### 3. Configure the Application
+
+Edit `manifest.json` to set:
+- Application metadata (name, version, description)
+- Model configuration (framework, path, runtime settings)
+- Input/output configuration
+
+### 4. Package the Application
+
+```bash
+python -m mvas_cli.cli package my_inspection_app -o my_inspection_app.mvapp
+```
+
+### 5. Validate the Package
+
+```bash
+python -m mvas_cli.cli validate my_inspection_app.mvapp
+```
+
+## Application Package Format
+
+A `.mvapp` file is a ZIP archive containing:
+
+```
+app.mvapp
+├── manifest.json           # Application metadata & configuration
+├── model/
+│   └── model.onnx         # Trained model
+├── preprocessing/
+│   └── transforms.json    # Image preprocessing pipeline
+├── postprocessing/
+│   └── rules.json         # Decision rules & thresholds
+├── assets/                 # Optional: reference images, masks
+└── ui/                     # Optional: visualization settings
+```
+
+## API Endpoints
+
+### Applications
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/apps/load` | Load a .mvapp file |
+| DELETE | `/api/v1/apps/{app_id}` | Unload an application |
+| GET | `/api/v1/apps` | List all loaded apps |
+| GET | `/api/v1/apps/{app_id}` | Get app details |
+
+### Inspection
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/inspect` | Run inspection (JSON) |
+| POST | `/api/v1/inspect/upload` | Run inspection (file upload) |
+| POST | `/api/v1/inspect/batch` | Batch inspection |
+
+### Cameras
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/cameras/connect` | Connect to camera |
+| DELETE | `/api/v1/cameras/{id}` | Disconnect camera |
+| GET | `/api/v1/cameras` | List connected cameras |
+| GET | `/api/v1/cameras/{id}/grab` | Grab single frame |
+
+### WebSocket Streaming
+```
+ws://server:8000/ws/stream/{session_id}
+```
+
+## Supported Input Sources
+
+| Type | Description | Configuration |
+|------|-------------|---------------|
+| `usb` | USB cameras, webcams | `{"address": "0"}` |
+| `gige` | GigE Vision cameras | `{"address": "192.168.1.100"}` |
+| `folder` | Watch folder for new images | `{"address": "/path/to/folder"}` |
+| `rtsp` | RTSP video streams | `{"address": "rtsp://..."}` |
+| `rest` | REST API image upload | Default |
+
+## Supported Inference Backends
+
+| Backend | Framework | File Extension | Notes |
+|---------|-----------|----------------|-------|
+| ONNX Runtime | ONNX | `.onnx` | Default, CPU/GPU |
+| TorchScript | PyTorch | `.pt`, `.pth` | Requires PyTorch |
+| TensorRT | NVIDIA | `.engine` | NVIDIA GPU only |
+| OpenVINO | Intel | `.xml` | Intel CPU/GPU |
+
+## Project Structure
+
+```
+mvas/
+├── mvas_runtime/           # Core runtime
+│   ├── server.py          # FastAPI server
+│   ├── app_manager.py     # Application manager
+│   ├── app_loader.py      # Package loader
+│   ├── inference_engine.py # Model inference
+│   ├── input_sources/     # Camera/input handlers
+│   ├── preprocessing/     # Image transforms
+│   └── outputs/           # Result handlers
+├── mvas_cli/              # Command-line tools
+├── mvas_sdk/              # Python client SDK
+├── examples/              # Example applications
+├── docs/                  # Documentation
+└── requirements.txt
+```
+
+## Configuration
+
+Environment variables (prefix with `MVAS_`):
+```bash
+MVAS_SERVER__HOST=0.0.0.0
+MVAS_SERVER__PORT=8000
+MVAS_STORAGE__APPS_DIR=/apps
+MVAS_INFERENCE__DEFAULT_DEVICE=auto
+```
+
+Or use a config file:
+```yaml
+# config.yaml
+server:
+  host: 0.0.0.0
+  port: 8000
+
+storage:
+  apps_dir: ./apps
+  data_dir: ./data
+
+inference:
+  default_device: auto
+  default_precision: fp32
+```
+
+## Docker Deployment
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY mvas_runtime/ ./mvas_runtime/
+COPY config/ ./config/
+
+EXPOSE 8000
+CMD ["uvicorn", "mvas_runtime.server:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+```bash
+docker build -t mvas-server .
+docker run -p 8000:8000 -v /path/to/apps:/apps mvas-server
+```
+
+## Documentation
+
+See `docs/SYSTEM_DESIGN.md` for detailed system design and architecture.
+
+## License
+
+MIT License
+
+## Contributing
+
+Contributions are welcome! Please read the contribution guidelines first.
+

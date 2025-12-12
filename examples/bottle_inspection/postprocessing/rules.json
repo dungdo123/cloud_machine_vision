@@ -1,0 +1,44 @@
+{
+  "thresholds": {
+    "anomaly_score": {
+      "pass": 0.3,
+      "review": 0.7
+    }
+  },
+  
+  "decision_logic": {
+    "primary": "anomaly_score",
+    "rules": [
+      {
+        "condition": "anomaly_score < thresholds.anomaly_score.pass",
+        "decision": "pass",
+        "confidence_source": "1 - anomaly_score"
+      },
+      {
+        "condition": "anomaly_score >= thresholds.anomaly_score.pass AND anomaly_score < thresholds.anomaly_score.review",
+        "decision": "review",
+        "confidence_source": "anomaly_score"
+      },
+      {
+        "condition": "anomaly_score >= thresholds.anomaly_score.review",
+        "decision": "fail",
+        "confidence_source": "anomaly_score"
+      }
+    ]
+  },
+  
+  "outputs": {
+    "include_anomaly_map": true,
+    "include_bounding_boxes": true,
+    "include_heatmap_overlay": true,
+    "defect_min_area": 100
+  },
+  
+  "visualization": {
+    "heatmap_colormap": "jet",
+    "heatmap_alpha": 0.5,
+    "bbox_color": "#FF0000",
+    "bbox_thickness": 2
+  }
+}
+

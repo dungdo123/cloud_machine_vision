@@ -1,0 +1,55 @@
+# MVAS - Machine Vision Application Standard
+# Core Dependencies
+
+# Web Framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+python-multipart>=0.0.6
+websockets>=11.0
+
+# Data Models & Validation
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# Image Processing
+opencv-python>=4.8.0
+numpy>=1.24.0
+Pillow>=10.0.0
+
+# Inference Backends (at least one required)
+onnxruntime>=1.15.0  # CPU version
+# onnxruntime-gpu>=1.15.0  # GPU version (uncomment for NVIDIA GPU)
+
+# Optional: PyTorch backend
+# torch>=2.0.0
+# torchvision>=0.15.0
+
+# Optional: OpenVINO backend (Intel)
+# openvino>=2023.0.0
+
+# Camera Support
+# harvesters>=1.4.0  # For GigE Vision cameras (requires GenTL producer)
+
+# PLC Communication
+# pymodbus>=3.0.0  # For Modbus TCP/RTU
+
+# MQTT Support
+# paho-mqtt>=1.6.0
+
+# WebSocket Client (for SDK)
+websocket-client>=1.5.0
+
+# HTTP Client (for SDK)
+requests>=2.28.0
+
+# Configuration
+pyyaml>=6.0
+
+# CLI
+# click>=8.0.0  # Alternative to argparse
+
+# Development & Testing
+# pytest>=7.0.0
+# pytest-asyncio>=0.21.0
+# httpx>=0.24.0  # For testing FastAPI
+
