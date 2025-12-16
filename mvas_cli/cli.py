@@ -324,6 +324,7 @@ def main():
     package_parser.add_argument("source", help="Source directory")
     package_parser.add_argument("-o", "--output", help="Output .mvapp file path")
     
+    
     # validate command
     validate_parser = subparsers.add_parser("validate", help="Validate a .mvapp package")
     validate_parser.add_argument("app_path", help="Path to .mvapp file")

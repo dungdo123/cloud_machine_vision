@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MVAS - Machine Vision Application Standard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👁️</text></svg>">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">👁️</div>
+                <div class="logo-text">MVAS<span>.</span>runtime</div>
+            </div>
+            <div class="header-actions">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span id="system-status">System Online</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="nav-section">
+                <div class="nav-section-title">Main</div>
+                <a class="nav-item active" data-page="dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="9" rx="1"/>
+                        <rect x="14" y="3" width="7" height="5" rx="1"/>
+                        <rect x="14" y="12" width="7" height="9" rx="1"/>
+                        <rect x="3" y="16" width="7" height="5" rx="1"/>
+                    </svg>
+                    Dashboard
+                </a>
+                <a class="nav-item" data-page="apps">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                        <line x1="12" y1="22.08" x2="12" y2="12"/>
+                    </svg>
+                    Applications
+                    <span class="nav-badge" id="apps-count">0</span>
+                </a>
+                <a class="nav-item" data-page="inference">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="16"/>
+                        <line x1="8" y1="12" x2="16" y2="12"/>
+                    </svg>
+                    Run Inference
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Inputs</div>
+                <a class="nav-item" data-page="cameras">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                    Cameras
+                </a>
+                <a class="nav-item" data-page="stream">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="23 7 16 12 23 17 23 7"/>
+                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+                    </svg>
+                    Live Stream
+                </a>
+            </div>
+            <div class="nav-section">
+                <div class="nav-section-title">Data</div>
+                <a class="nav-item" data-page="results">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10 9 9 9 8 9"/>
+                    </svg>
+                    Results
+                </a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div id="page-dashboard" class="page">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Dashboard</h1>
+                        <p class="page-subtitle">System overview and quick actions</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="showUploadModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        Upload App
+                    </button>
+                </div>
+
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon apps">📦</div>
+                        <div class="stat-content">
+                            <h3 id="stat-apps">0</h3>
+                            <p>Loaded Applications</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon cameras">📷</div>
+                        <div class="stat-content">
+                            <h3 id="stat-cameras">0</h3>
+                            <p>Connected Cameras</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon inspections">🔍</div>
+                        <div class="stat-content">
+                            <h3 id="stat-inspections">0</h3>
+                            <p>Total Inspections</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon errors">⚠️</div>
+                        <div class="stat-content">
+                            <h3 id="stat-errors">0</h3>
+                            <p>Errors Today</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                            </svg>
+                            Quick Actions
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="flex gap-4">
+                            <button class="btn btn-secondary" onclick="navigateTo('apps')">
+                                📦 Manage Apps
+                            </button>
+                            <button class="btn btn-secondary" onclick="navigateTo('inference')">
+                                🔍 Run Inference
+                            </button>
+                            <button class="btn btn-secondary" onclick="navigateTo('cameras')">
+                                📷 Add Camera
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Apps -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <span class="card-title">Loaded Applications</span>
+                        <button class="btn btn-sm btn-secondary" onclick="refreshApps()">Refresh</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="dashboard-apps-list" class="apps-grid">
+                            <div class="empty-state">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                                </svg>
+                                <h3>No Applications Loaded</h3>
+                                <p>Upload a .mvapp file to get started</p>
+                                <button class="btn btn-primary" onclick="showUploadModal()">Upload App</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Applications Page -->
+            <div id="page-apps" class="page hidden">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Applications</h1>
+                        <p class="page-subtitle">Manage your machine vision applications</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="showUploadModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        Upload App
+                    </button>
+                </div>
+                <div id="apps-list" class="apps-grid">
+                    <!-- Apps loaded dynamically -->
+                </div>
+            </div>
+
+            <!-- Inference Page -->
+            <div id="page-inference" class="page hidden">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Run Inference</h1>
+                        <p class="page-subtitle">Process images, videos, or live camera streams</p>
+                    </div>
+                </div>
+                
+                <!-- Mode Tabs -->
+                <div class="tabs">
+                    <button class="tab active" data-inference-mode="image" onclick="switchInferenceMode('image')">
+                        🖼️ Image
+                    </button>
+                    <button class="tab" data-inference-mode="video" onclick="switchInferenceMode('video')">
+                        🎬 Video
+                    </button>
+                    <button class="tab" data-inference-mode="live" onclick="switchInferenceMode('live')">
+                        📹 Live Stream
+                    </button>
+                </div>
+
+                <!-- ==================== IMAGE MODE ==================== -->
+                <div id="inference-mode-image" class="inference-mode">
+                    <div class="inference-panel">
+                        <!-- Left: Upload & Settings -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">🖼️ Image Input</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label">Select Application</label>
+                                    <select class="form-control" id="inference-app-select">
+                                        <option value="">-- Select an app --</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="file-upload-zone" id="inference-dropzone">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                        <polyline points="17 8 12 3 7 8"/>
+                                        <line x1="12" y1="3" x2="12" y2="15"/>
+                                    </svg>
+                                    <h4>Drop image here</h4>
+                                    <p>or click to browse (JPG, PNG)</p>
+                                    <input type="file" id="inference-file-input" accept="image/*">
+                                </div>
+                                
+                                <!-- Image Parameters -->
+                                <div class="params-section mt-4">
+                                    <div class="form-label" style="margin-bottom: 12px; font-weight: 600;">⚙️ Parameters</div>
+                                    <div class="params-grid">
+                                        <div class="form-group">
+                                            <label class="form-label">Visualization</label>
+                                            <select class="form-control" id="img-param-visualization">
+                                                <option value="heatmap">Heatmap Overlay</option>
+                                                <option value="bbox">Bounding Boxes</option>
+                                                <option value="mask">Segmentation Mask</option>
+                                                <option value="none">None</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Anomaly Threshold</label>
+                                            <input type="number" class="form-control" id="img-param-threshold" value="0.5" min="0" max="1" step="0.05">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Confidence Filter</label>
+                                            <input type="number" class="form-control" id="img-param-confidence" value="0.0" min="0" max="1" step="0.05">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Save Result</label>
+                                            <select class="form-control" id="img-param-save">
+                                                <option value="false">No</option>
+                                                <option value="true">Yes</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="preview-container mt-4" id="preview-container">
+                                    <div class="preview-placeholder">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                            <circle cx="8.5" cy="8.5" r="1.5"/>
+                                            <polyline points="21 15 16 10 5 21"/>
+                                        </svg>
+                                        <p>Image preview will appear here</p>
+                                    </div>
+                                </div>
+                                
+                                <button class="btn btn-primary btn-lg mt-4" style="width: 100%;" id="run-inference-btn" disabled>
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="5 3 19 12 5 21 5 3"/>
+                                    </svg>
+                                    Run Inference
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Right: Results -->
+                        <div class="card" id="results-card">
+                            <div class="card-header">
+                                <span class="card-title">Results</span>
+                            </div>
+                            <div class="card-body">
+                                <div id="results-placeholder" class="empty-state">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                        <circle cx="11" cy="11" r="8"/>
+                                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                    </svg>
+                                    <h3>No Results Yet</h3>
+                                    <p>Upload an image and run inference to see results</p>
+                                </div>
+                                
+                                <div id="results-display" class="hidden">
+                                    <div class="result-header">
+                                        <span class="result-decision" id="result-decision">PASS</span>
+                                        <span class="text-muted" id="result-request-id">Request ID: --</span>
+                                    </div>
+                                    
+                                    <div class="result-metrics">
+                                        <div class="metric-item">
+                                            <div class="metric-label">Anomaly Score</div>
+                                            <div class="metric-value score" id="result-score">0.00</div>
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" id="result-score-bar" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="metric-item">
+                                            <div class="metric-label">Confidence</div>
+                                            <div class="metric-value confidence" id="result-confidence">0%</div>
+                                            <div class="progress-bar">
+                                                <div class="progress-fill" id="result-confidence-bar" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="metric-item">
+                                            <div class="metric-label">Inference Time</div>
+                                            <div class="metric-value time" id="result-inference-time">-- ms</div>
+                                        </div>
+                                        <div class="metric-item">
+                                            <div class="metric-label">Total Time</div>
+                                            <div class="metric-value time" id="result-total-time">-- ms</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-4">
+                                        <label class="form-label">Visualization</label>
+                                        <div class="preview-container">
+                                            <img id="result-visualization" src="" alt="Visualization">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== VIDEO MODE ==================== -->
+                <div id="inference-mode-video" class="inference-mode hidden">
+                    <div class="inference-panel">
+                        <!-- Left: Video Upload & Settings -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">🎬 Video Input</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label">Select Application</label>
+                                    <select class="form-control" id="video-app-select">
+                                        <option value="">-- Select an app --</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="file-upload-zone" id="video-dropzone">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                        <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+                                        <line x1="7" y1="2" x2="7" y2="22"/>
+                                        <line x1="17" y1="2" x2="17" y2="22"/>
+                                        <line x1="2" y1="12" x2="22" y2="12"/>
+                                        <line x1="2" y1="7" x2="7" y2="7"/>
+                                        <line x1="2" y1="17" x2="7" y2="17"/>
+                                        <line x1="17" y1="17" x2="22" y2="17"/>
+                                        <line x1="17" y1="7" x2="22" y2="7"/>
+                                    </svg>
+                                    <h4>Drop video file here</h4>
+                                    <p>or click to browse (MP4, AVI, MOV)</p>
+                                    <input type="file" id="video-file-input" accept="video/*">
+                                </div>
+                                
+                                <!-- Video Parameters -->
+                                <div class="params-section mt-4">
+                                    <div class="form-label" style="margin-bottom: 12px; font-weight: 600;">⚙️ Processing Parameters</div>
+                                    <div class="params-grid">
+                                        <div class="form-group">
+                                            <label class="form-label">Frame Skip</label>
+                                            <input type="number" class="form-control" id="video-param-skip" value="1" min="1" max="30" title="Process every Nth frame">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Max Frames</label>
+                                            <input type="number" class="form-control" id="video-param-max" value="0" min="0" title="0 = process all frames">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Target FPS</label>
+                                            <input type="number" class="form-control" id="video-param-fps" value="10" min="1" max="60">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Visualization</label>
+                                            <select class="form-control" id="video-param-visualization">
+                                                <option value="heatmap">Heatmap Overlay</option>
+                                                <option value="bbox">Bounding Boxes</option>
+                                                <option value="none">None</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Anomaly Threshold</label>
+                                            <input type="number" class="form-control" id="video-param-threshold" value="0.5" min="0" max="1" step="0.05">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Save Output Video</label>
+                                            <select class="form-control" id="video-param-save">
+                                                <option value="false">No</option>
+                                                <option value="true">Yes</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Video Info -->
+                                <div id="video-info" class="hidden mt-4 params-section">
+                                    <div class="params-grid">
+                                        <div><span class="text-muted">File:</span> <span id="video-info-name">--</span></div>
+                                        <div><span class="text-muted">Duration:</span> <span id="video-info-duration">--</span></div>
+                                        <div><span class="text-muted">Resolution:</span> <span id="video-info-resolution">--</span></div>
+                                        <div><span class="text-muted">Est. Frames:</span> <span id="video-info-frames">--</span></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex gap-2 mt-4">
+                                    <button class="btn btn-primary btn-lg" style="flex: 1;" id="video-process-btn" disabled onclick="processVideo()">
+                                        ▶️ Process Video
+                                    </button>
+                                    <button class="btn btn-danger btn-lg hidden" id="video-stop-btn" onclick="stopVideoProcessing()">
+                                        ⏹️ Stop
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right: Video Results -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Video Results</span>
+                                <span class="stream-badge hidden" id="video-processing-badge">PROCESSING</span>
+                            </div>
+                            <div class="card-body">
+                                <!-- Video Preview -->
+                                <div class="stream-container">
+                                    <video id="video-preview" class="stream-video" controls></video>
+                                    <canvas id="video-canvas" class="stream-video hidden"></canvas>
+                                </div>
+                                
+                                <!-- Progress -->
+                                <div id="video-progress-section" class="mt-4 hidden">
+                                    <div class="flex justify-between mb-2">
+                                        <span class="text-muted">Processing Progress</span>
+                                        <span id="video-progress-text">0 / 0 frames</span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" id="video-progress-bar" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Video Stats -->
+                                <div class="result-metrics mt-4">
+                                    <div class="metric-item">
+                                        <div class="metric-label">Frames Processed</div>
+                                        <div class="metric-value" id="video-stat-frames">0</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Pass Rate</div>
+                                        <div class="metric-value confidence" id="video-stat-pass">--%</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Avg Inference</div>
+                                        <div class="metric-value time" id="video-stat-time">-- ms</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Actual FPS</div>
+                                        <div class="metric-value" id="video-stat-fps">--</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Decision Timeline -->
+                                <div class="mt-4">
+                                    <label class="form-label">Decision Timeline</label>
+                                    <div class="timeline-container" id="video-timeline">
+                                        <div class="timeline-bar"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== LIVE STREAM MODE ==================== -->
+                <div id="inference-mode-live" class="inference-mode hidden">
+                    <div class="inference-panel">
+                        <!-- Left: Stream Settings -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">📹 Live Stream Configuration</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group">
+                                    <label class="form-label">Select Application</label>
+                                    <select class="form-control" id="live-app-select">
+                                        <option value="">-- Select an app --</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Camera Source</label>
+                                    <select class="form-control" id="live-camera-select">
+                                        <option value="">-- Select a camera --</option>
+                                    </select>
+                                </div>
+                                
+                                <!-- Live Stream Parameters -->
+                                <div class="params-section mt-4">
+                                    <div class="form-label" style="margin-bottom: 12px; font-weight: 600;">⚙️ Stream Parameters</div>
+                                    <div class="params-grid">
+                                        <div class="form-group">
+                                            <label class="form-label">Target FPS</label>
+                                            <input type="number" class="form-control" id="live-param-fps" value="10" min="1" max="30">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Frame Skip</label>
+                                            <input type="number" class="form-control" id="live-param-skip" value="1" min="1" max="10" title="Process every Nth frame">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Visualization</label>
+                                            <select class="form-control" id="live-param-visualization">
+                                                <option value="heatmap">Heatmap Overlay</option>
+                                                <option value="bbox">Bounding Boxes</option>
+                                                <option value="score">Score Badge Only</option>
+                                                <option value="none">None</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Anomaly Threshold</label>
+                                            <input type="number" class="form-control" id="live-param-threshold" value="0.5" min="0" max="1" step="0.05">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Auto-Save Fails</label>
+                                            <select class="form-control" id="live-param-autosave">
+                                                <option value="false">No</option>
+                                                <option value="true">Yes</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Buffer Size</label>
+                                            <input type="number" class="form-control" id="live-param-buffer" value="5" min="1" max="30" title="Frame buffer size">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Alert on Fail</label>
+                                            <select class="form-control" id="live-param-alert">
+                                                <option value="false">No</option>
+                                                <option value="true">Yes (Sound)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Show Heatmap Scale</label>
+                                            <select class="form-control" id="live-param-scale">
+                                                <option value="true">Yes</option>
+                                                <option value="false">No</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex gap-2 mt-4">
+                                    <button class="btn btn-primary btn-lg" style="flex: 1;" id="live-start-btn" onclick="startLiveStream()">
+                                        ▶️ Start Live Inspection
+                                    </button>
+                                    <button class="btn btn-danger btn-lg hidden" id="live-stop-btn" onclick="stopLiveStream()">
+                                        ⏹️ Stop
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right: Live View -->
+                        <div class="card">
+                            <div class="card-header">
+                                <span class="card-title">Live View</span>
+                                <div class="flex gap-2 items-center">
+                                    <span class="stream-badge hidden" id="live-badge">🔴 LIVE</span>
+                                    <span class="stream-badge" id="live-fps-badge">0 FPS</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="stream-container">
+                                    <img id="live-video" class="stream-video" src="" alt="Live Stream">
+                                    <div class="stream-overlay">
+                                        <span class="stream-badge" id="live-decision-badge">--</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Live Stats -->
+                                <div class="result-metrics mt-4">
+                                    <div class="metric-item">
+                                        <div class="metric-label">Current Decision</div>
+                                        <div class="metric-value" id="live-stat-decision">--</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Anomaly Score</div>
+                                        <div class="metric-value score" id="live-stat-score">--</div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill" id="live-score-bar" style="width: 0%"></div>
+                                        </div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Inference Time</div>
+                                        <div class="metric-value time" id="live-stat-time">-- ms</div>
+                                    </div>
+                                    <div class="metric-item">
+                                        <div class="metric-label">Total Frames</div>
+                                        <div class="metric-value" id="live-stat-frames">0</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Session Stats -->
+                                <div class="params-section mt-4">
+                                    <div class="form-label" style="margin-bottom: 12px; font-weight: 600;">📊 Session Statistics</div>
+                                    <div class="params-grid">
+                                        <div class="metric-item">
+                                            <div class="metric-label">Total Pass</div>
+                                            <div class="metric-value confidence" id="live-total-pass">0</div>
+                                        </div>
+                                        <div class="metric-item">
+                                            <div class="metric-label">Total Fail</div>
+                                            <div class="metric-value score" id="live-total-fail">0</div>
+                                        </div>
+                                        <div class="metric-item">
+                                            <div class="metric-label">Pass Rate</div>
+                                            <div class="metric-value" id="live-pass-rate">--%</div>
+                                        </div>
+                                        <div class="metric-item">
+                                            <div class="metric-label">Avg Time</div>
+                                            <div class="metric-value time" id="live-avg-time">-- ms</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cameras Page -->
+            <div id="page-cameras" class="page hidden">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Cameras</h1>
+                        <p class="page-subtitle">Manage connected image sources</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="showCameraModal()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Add Camera
+                    </button>
+                </div>
+                <div id="cameras-list" class="apps-grid">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                            <circle cx="12" cy="13" r="4"/>
+                        </svg>
+                        <h3>No Cameras Connected</h3>
+                        <p>Add a USB camera, GigE camera, or folder watcher</p>
+                        <button class="btn btn-primary" onclick="showCameraModal()">Add Camera</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Stream Page -->
+            <div id="page-stream" class="page hidden">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Live Stream</h1>
+                        <p class="page-subtitle">Real-time inspection with connected camera</p>
+                    </div>
+                </div>
+                
+                <div class="inference-panel">
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Stream Configuration</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label class="form-label">Application</label>
+                                <select class="form-control" id="stream-app-select">
+                                    <option value="">-- Select an app --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Camera</label>
+                                <select class="form-control" id="stream-camera-select">
+                                    <option value="">-- Select a camera --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Target FPS</label>
+                                <input type="number" class="form-control" id="stream-fps" value="10" min="1" max="30">
+                            </div>
+                            <div class="flex gap-2 mt-4">
+                                <button class="btn btn-primary" id="stream-start-btn" onclick="startStream()">
+                                    ▶️ Start Stream
+                                </button>
+                                <button class="btn btn-danger hidden" id="stream-stop-btn" onclick="stopStream()">
+                                    ⏹️ Stop Stream
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">Live View</span>
+                            <span class="stream-badge hidden" id="stream-live-badge">LIVE</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="stream-container">
+                                <img id="stream-video" class="stream-video" src="" alt="Stream">
+                                <div class="stream-overlay">
+                                    <span class="stream-badge" id="stream-decision-badge">--</span>
+                                    <span class="stream-badge" id="stream-fps-badge">0 FPS</span>
+                                </div>
+                            </div>
+                            <div class="result-metrics mt-4">
+                                <div class="metric-item">
+                                    <div class="metric-label">Decision</div>
+                                    <div class="metric-value" id="stream-decision">--</div>
+                                </div>
+                                <div class="metric-item">
+                                    <div class="metric-label">Anomaly Score</div>
+                                    <div class="metric-value score" id="stream-score">--</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Page -->
+            <div id="page-results" class="page hidden">
+                <div class="page-header">
+                    <div>
+                        <h1 class="page-title">Inspection Results</h1>
+                        <p class="page-subtitle">View inspection history</p>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Request ID</th>
+                                        <th>Application</th>
+                                        <th>Decision</th>
+                                        <th>Score</th>
+                                        <th>Time</th>
+                                        <th>Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="results-table-body">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted" style="padding: 40px;">
+                                            No results recorded yet
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal-overlay" id="upload-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Upload Application</h3>
+                <button class="modal-close" onclick="hideUploadModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="file-upload-zone" id="upload-dropzone">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    <h4>Drop .mvapp file here</h4>
+                    <p>or click to browse</p>
+                    <input type="file" id="upload-file-input" accept=".mvapp,.zip">
+                </div>
+                <div id="upload-progress" class="hidden mt-4">
+                    <p class="text-muted mb-2">Uploading...</p>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="upload-progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideUploadModal()">Cancel</button>
+                <button class="btn btn-primary" id="upload-btn" disabled onclick="uploadApp()">Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Camera Modal -->
+    <div class="modal-overlay" id="camera-modal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Camera</h3>
+                <button class="modal-close" onclick="hideCameraModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Camera Type</label>
+                    <select class="form-control" id="camera-type">
+                        <option value="usb">USB Camera</option>
+                        <option value="folder">Folder Watcher</option>
+                        <option value="gige">GigE Vision Camera</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" class="form-control" id="camera-name" placeholder="Camera 1">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Address / Path</label>
+                    <input type="text" class="form-control" id="camera-address" placeholder="0 (for USB) or folder path">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="hideCameraModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="addCamera()">Add Camera</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
+

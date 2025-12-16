@@ -1,0 +1,40 @@
+{
+  "pipeline": [
+    {
+      "op": "resize",
+      "params": {
+        "width": 256,
+        "height": 256
+      }
+    },
+    {
+      "op": "bgr2rgb",
+      "params": {}
+    },
+    {
+      "op": "normalize",
+      "params": {
+        "mean": [
+          0.485,
+          0.456,
+          0.406
+        ],
+        "std": [
+          0.229,
+          0.224,
+          0.225
+        ]
+      }
+    },
+    {
+      "op": "to_tensor",
+      "params": {
+        "dtype": "float32"
+      }
+    },
+    {
+      "op": "add_batch_dim",
+      "params": {}
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "mvas_version": "1.0.0",
+  "app": {
+    "id": "my_inspection_app",
+    "name": "my_inspection_app",
+    "version": "1.0.0",
+    "description": "MVAS application",
+    "author": "",
+    "tags": []
+  },
+  "model": {
+    "type": "anomaly_detection",
+    "algorithm": "patchcore",
+    "framework": "onnx",
+    "path": "model/model.onnx",
+    "runtime": {
+      "device": "auto",
+      "precision": "fp32"
+    }
+  },
+  "input": {
+    "type": "image",
+    "color_mode": "RGB",
+    "resolution": {
+      "width": 256,
+      "height": 256
+    },
+    "preprocessing": "preprocessing/transforms.json"
+  },
+  "output": {
+    "type": "anomaly_map",
+    "postprocessing": "postprocessing/rules.json",
+    "save_images": true
+  }
+}

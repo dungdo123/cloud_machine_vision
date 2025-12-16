@@ -7,6 +7,7 @@ FastAPI-based server providing REST and WebSocket APIs for the MVAS runtime.
 import asyncio
 import base64
 import logging
+import shutil
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -16,9 +17,11 @@ from typing import Optional, List, Dict, Any
 
 import cv2
 import numpy as np
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Query
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from .config import get_config, MVASConfig
@@ -82,6 +85,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Setup static files and templates
+_runtime_dir = Path(__file__).parent
+_static_dir = _runtime_dir / "static"
+_templates_dir = _runtime_dir / "templates"
+
+# Mount static files
+if _static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
+
+# Setup templates
+templates = Jinja2Templates(directory=str(_templates_dir)) if _templates_dir.exists() else None
+
 # Global visualizer
 visualizer = Visualizer()
 
@@ -101,17 +116,38 @@ class SuccessResponse(BaseModel):
 
 
 # ============================================================================
-# Health & Status Endpoints
+# Web UI Endpoints
 # ============================================================================
 
-@app.get("/", tags=["Health"])
-async def root():
-    """Root endpoint"""
+@app.get("/", response_class=HTMLResponse, tags=["UI"])
+async def root(request: Request):
+    """Serve the main web UI"""
+    if templates:
+        return templates.TemplateResponse("index.html", {"request": request})
+    return HTMLResponse(content="""
+        <html>
+            <head><title>MVAS Runtime</title></head>
+            <body style="font-family: sans-serif; padding: 40px; background: #0a0e14; color: #e8eaed;">
+                <h1>MVAS Runtime</h1>
+                <p>Web UI templates not found. API is available at <a href="/docs" style="color: #00d4aa;">/docs</a></p>
+            </body>
+        </html>
+    """)
+
+
+@app.get("/api", tags=["Health"])
+async def api_root():
+    """API root endpoint"""
     return {
         "name": "MVAS Runtime",
         "version": "1.0.0",
         "status": "running"
     }
+
+
+# ============================================================================
+# Health & Status Endpoints
+# ============================================================================
 
 
 @app.get("/health", tags=["Health"])
@@ -147,6 +183,44 @@ async def load_app(request: LoadAppRequest):
         )
     except Exception as e:
         logger.exception(f"Failed to load app: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/v1/apps/upload", response_model=LoadAppResponse, tags=["Applications"])
+async def upload_app(file: UploadFile = File(..., description="The .mvapp file to upload")):
+    """Upload and load a .mvapp application file"""
+    manager = get_app_manager()
+    config = get_config()
+    
+    # Validate file extension
+    if not file.filename.endswith(('.mvapp', '.zip')):
+        raise HTTPException(status_code=400, detail="File must be a .mvapp or .zip file")
+    
+    try:
+        # Ensure apps directory exists
+        apps_dir = config.storage.apps_dir
+        apps_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save uploaded file
+        file_path = apps_dir / file.filename
+        with open(file_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+        
+        # Load the app
+        app_instance = manager.load_app(file_path)
+        
+        return LoadAppResponse(
+            success=True,
+            app_id=app_instance.app_id,
+            app_info=app_instance.info,
+            message=f"Application '{app_instance.info.name}' uploaded and loaded successfully"
+        )
+    except Exception as e:
+        logger.exception(f"Failed to upload app: {e}")
+        # Clean up uploaded file on failure
+        if file_path.exists():
+            file_path.unlink()
         raise HTTPException(status_code=400, detail=str(e))
 
 

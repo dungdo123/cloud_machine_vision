@@ -5,6 +5,11 @@
 **Date:** December 12, 2025  
 **Author:** MVAS Development Team
 
+> ⚠️ **Note:** This is the v1.0 basic architecture. For production deployments requiring 
+> multi-stage pipelines, multiple models, and app marketplace functionality, see 
+> [ENHANCED_ARCHITECTURE.md](./ENHANCED_ARCHITECTURE.md) which describes the v2.0 
+> DAG-based pipeline system and App Store distribution model.
+
 ---
 
 ## Table of Contents
@@ -1072,29 +1077,38 @@ spec:
 
 ## 14. Future Roadmap
 
-### Phase 1 (Current)
+### Phase 1 (Current) - Basic Runtime
 - [x] Core runtime implementation
 - [x] ONNX/TorchScript support
 - [x] Basic camera support (USB, folder)
 - [x] REST API
 
-### Phase 2 (Q1 2026)
+### Phase 2 (Q1 2026) - Production Ready
 - [ ] GigE Vision camera support
 - [ ] Web dashboard UI
 - [ ] Docker deployment
 - [ ] Result database
 
-### Phase 3 (Q2 2026)
+### Phase 3 (Q2 2026) - Enhanced Pipeline (v2.0)
+- [ ] **DAG-based pipeline execution** (see [ENHANCED_ARCHITECTURE.md](./ENHANCED_ARCHITECTURE.md))
+- [ ] **Multi-model support** with branching and loops
+- [ ] **Sandboxed custom processors** (Python)
 - [ ] TensorRT optimization
 - [ ] PLC/Modbus integration
 - [ ] Multi-camera support
+
+### Phase 4 (Q3 2026) - App Marketplace
+- [ ] **MVAS App Store** - browse, download, install apps
+- [ ] **Developer Portal** - publish and monetize apps
+- [ ] **Package signing** and security verification
 - [ ] Kubernetes deployment
 
-### Phase 4 (Q3 2026)
+### Phase 5 (Q4 2026) - Enterprise & Edge
 - [ ] Active learning feedback loop
 - [ ] Model retraining pipeline
 - [ ] Edge deployment (NVIDIA Jetson)
 - [ ] Multi-tenant cloud version
+- [ ] Enterprise license management
 
 ---
 

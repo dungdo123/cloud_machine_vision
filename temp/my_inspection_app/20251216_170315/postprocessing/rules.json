@@ -1,0 +1,12 @@
+{
+  "thresholds": {
+    "anomaly_score": {
+      "pass": 0.3,
+      "review": 0.7
+    }
+  },
+  "outputs": {
+    "include_anomaly_map": true,
+    "include_heatmap_overlay": true
+  }
+}
