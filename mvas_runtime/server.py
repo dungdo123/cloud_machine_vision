@@ -29,10 +29,12 @@ from .app_manager import AppManager, get_app_manager
 from .models import (
     LoadAppRequest, LoadAppResponse, InspectRequest, InspectResponse,
     ConnectCameraRequest, CameraInfo, StreamConfig, SystemStatus,
-    AppInfo, InspectionResult, DecisionResult, InputSourceType
+    AppInfo, PluginAppInfo, InspectionResult, DecisionResult, InputSourceType,
+    PackageType
 )
 from .input_sources.rest_upload import RESTUploadSource
 from .outputs.visualization import Visualizer
+from .app_loader import NativePluginInstance
 
 logger = logging.getLogger(__name__)
 
@@ -235,14 +237,25 @@ async def unload_app(app_id: str):
         raise HTTPException(status_code=404, detail=f"Application not found: {app_id}")
 
 
-@app.get("/api/v1/apps", response_model=List[AppInfo], tags=["Applications"])
+@app.get("/api/v1/apps", tags=["Applications"])
 async def list_apps():
-    """List all loaded applications"""
+    """List all loaded applications (v1 script and v2 native plugins)"""
     manager = get_app_manager()
-    return manager.list_apps()
+    apps = manager.list_apps()
+    
+    # Convert to dict for proper serialization
+    result = []
+    for app_info in apps:
+        info_dict = app_info.model_dump() if hasattr(app_info, 'model_dump') else app_info.dict()
+        # Add package type indicator
+        if hasattr(app_info, 'package_type'):
+            info_dict['is_native_plugin'] = app_info.package_type == PackageType.NATIVE
+        result.append(info_dict)
+    
+    return result
 
 
-@app.get("/api/v1/apps/{app_id}", response_model=AppInfo, tags=["Applications"])
+@app.get("/api/v1/apps/{app_id}", tags=["Applications"])
 async def get_app(app_id: str):
     """Get application details"""
     manager = get_app_manager()
@@ -251,7 +264,17 @@ async def get_app(app_id: str):
     if app is None:
         raise HTTPException(status_code=404, detail=f"Application not found: {app_id}")
     
-    return app.info
+    info = app.info
+    result = info.model_dump() if hasattr(info, 'model_dump') else info.dict()
+    
+    # Add plugin-specific info if native
+    if isinstance(app, NativePluginInstance):
+        result['is_native_plugin'] = True
+        result['plugin_stats'] = app.plugin.get_stats()
+    else:
+        result['is_native_plugin'] = False
+    
+    return result
 
 
 @app.get("/api/v1/apps/{app_id}/stats", tags=["Applications"])

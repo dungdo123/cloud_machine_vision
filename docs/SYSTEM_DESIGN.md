@@ -6,9 +6,9 @@
 **Author:** MVAS Development Team
 
 > ⚠️ **Note:** This is the v1.0 basic architecture. For production deployments requiring 
-> multi-stage pipelines, multiple models, and app marketplace functionality, see 
+> maximum performance, multi-stage pipelines, and app marketplace functionality, see 
 > [ENHANCED_ARCHITECTURE.md](./ENHANCED_ARCHITECTURE.md) which describes the v2.0 
-> DAG-based pipeline system and App Store distribution model.
+> Native Plugin system (C/C++ DLL/SO), DAG-based pipelines, and App Store distribution model.
 
 ---
 

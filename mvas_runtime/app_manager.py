@@ -2,6 +2,7 @@
 MVAS Application Manager
 
 Central coordinator for loading, managing, and running applications.
+Supports both v1 (script-based) and v2 (native plugin) applications.
 """
 
 import logging
@@ -9,18 +10,19 @@ import time
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, Union
 
 import numpy as np
 
 from .config import get_config
-from .app_loader import AppLoader, AppInstance, AppLoadError
+from .app_loader import AppLoader, AppInstance, NativePluginInstance, AppLoadError
 from .models import (
-    AppInfo, InspectionResult, DecisionResult, InferenceOutput,
-    InputSourceType, CameraInfo
+    AppInfo, PluginAppInfo, InspectionResult, DecisionResult, InferenceOutput,
+    InputSourceType, CameraInfo, PackageType
 )
 from .input_sources.base import InputSource, InputSourceFactory, register_default_sources
 from .input_sources.rest_upload import RESTUploadSource
+from .plugin_loader import NativeInferenceResult
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,7 @@ class AppManager:
     Singleton application manager.
     
     Manages:
-    - Loading/unloading applications
+    - Loading/unloading applications (v1 script and v2 native plugins)
     - Input source connections
     - Inference execution
     - Result processing
@@ -50,10 +52,13 @@ class AppManager:
             return
         
         self.config = get_config()
-        self.loader = AppLoader(self.config.storage.temp_dir)
+        self.loader = AppLoader(
+            temp_dir=self.config.storage.temp_dir,
+            plugins_dir=self.config.storage.apps_dir / "plugins"
+        )
         
-        # Loaded applications
-        self._apps: Dict[str, AppInstance] = {}
+        # Loaded applications (both v1 and v2)
+        self._apps: Dict[str, Union[AppInstance, NativePluginInstance]] = {}
         
         # Connected input sources
         self._sources: Dict[str, InputSource] = {}
@@ -75,38 +80,53 @@ class AppManager:
         self._default_rest_source.connect()
         
         self._initialized = True
-        logger.info("AppManager initialized")
+        logger.info("AppManager initialized (v1 + v2 support)")
     
     # ========================================================================
     # Application Management
     # ========================================================================
     
-    def load_app(self, app_path: str | Path) -> AppInstance:
+    def load_app(self, app_path: str | Path) -> Union[AppInstance, NativePluginInstance]:
         """
         Load an application from a .mvapp package.
+        
+        Automatically detects package type (v1 script or v2 native plugin).
         
         Args:
             app_path: Path to the .mvapp file
             
         Returns:
-            Loaded AppInstance
+            Loaded AppInstance (v1) or NativePluginInstance (v2)
             
         Raises:
             AppLoadError: If loading fails
         """
         app_path = Path(app_path)
         
-        # Load the application
-        app = self.loader.load(app_path)
+        # Peek at manifest to get app_id before loading
+        try:
+            manifest = self.loader._peek_manifest(app_path)
+            app_id = manifest.app.id
+            
+            # Unload existing app with same ID BEFORE loading new one
+            # This ensures DLLs are released before extraction
+            if app_id in self._apps:
+                logger.warning(f"App {app_id} already loaded, unloading first...")
+                self.unload_app(app_id)
+                # Give OS time to release file handles
+                import time
+                time.sleep(0.5)
+        except Exception as e:
+            logger.warning(f"Could not peek manifest: {e}")
         
-        # Check for duplicate
-        if app.app_id in self._apps:
-            logger.warning(f"App {app.app_id} already loaded, replacing")
-            self.unload_app(app.app_id)
+        # Load the application (loader auto-detects type)
+        app = self.loader.load(app_path)
         
         # Register app
         self._apps[app.app_id] = app
-        logger.info(f"App loaded: {app.app_id}")
+        
+        pkg_type = "native plugin" if app.package_type == PackageType.NATIVE else "script"
+        logger.info(f"App loaded ({pkg_type}): {app.app_id}")
         
         return app
     
@@ -130,13 +150,18 @@ class AppManager:
         logger.info(f"App unloaded: {app_id}")
         return True
     
-    def get_app(self, app_id: str) -> Optional[AppInstance]:
+    def get_app(self, app_id: str) -> Optional[Union[AppInstance, NativePluginInstance]]:
         """Get a loaded application by ID"""
         return self._apps.get(app_id)
     
-    def list_apps(self) -> list[AppInfo]:
-        """List all loaded applications"""
+    def list_apps(self) -> list[Union[AppInfo, PluginAppInfo]]:
+        """List all loaded applications (both v1 and v2)"""
         return [app.info for app in self._apps.values()]
+    
+    def is_native_plugin(self, app_id: str) -> bool:
+        """Check if an app is a native plugin"""
+        app = self._apps.get(app_id)
+        return app is not None and app.package_type == PackageType.NATIVE
     
     def get_app_stats(self, app_id: str) -> Optional[Dict[str, Any]]:
         """Get statistics for an application"""
@@ -241,9 +266,13 @@ class AppManager:
         image_base64: Optional[str] = None,
         image_path: Optional[str] = None,
         camera_id: Optional[str] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> InspectionResult:
         """
         Run inspection on an image.
+        
+        Automatically routes to the appropriate inference method based on
+        whether the app is a v1 script or v2 native plugin.
         
         Args:
             app_id: Application ID to use
@@ -251,6 +280,7 @@ class AppManager:
             image_base64: Base64 encoded image
             image_path: Path to image file
             camera_id: Grab from camera
+            params: Optional runtime parameters
             
         Returns:
             InspectionResult with decision and details
@@ -301,6 +331,75 @@ class AppManager:
                 total_time_ms=(time.perf_counter() - start_time) * 1000,
             )
         
+        # Route to appropriate inference method
+        if app.package_type == PackageType.NATIVE:
+            return self._inspect_native(app, image, request_id, start_time, params)
+        else:
+            return self._inspect_script(app, image, request_id, start_time)
+    
+    def _inspect_native(
+        self,
+        app: NativePluginInstance,
+        image: np.ndarray,
+        request_id: str,
+        start_time: float,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> InspectionResult:
+        """Run inspection using native plugin (v2)"""
+        try:
+            # Apply params if provided
+            if params:
+                app.plugin.set_config(params)
+            
+            # Direct inference - no preprocessing needed, plugin handles it
+            result = app.plugin.infer(image)
+            
+            # Map decision string to enum
+            decision_map = {
+                "pass": DecisionResult.PASS,
+                "fail": DecisionResult.FAIL,
+                "review": DecisionResult.REVIEW,
+            }
+            decision = decision_map.get(result.decision.lower(), DecisionResult.ERROR)
+            
+            total_time_ms = (time.perf_counter() - start_time) * 1000
+            
+            return InspectionResult(
+                request_id=request_id,
+                app_id=app.app_id,
+                decision=decision,
+                confidence=result.confidence,
+                anomaly_score=result.anomaly_score,
+                details={
+                    "package_type": "native",
+                    "has_anomaly_map": result.anomaly_map is not None,
+                    "has_bboxes": result.bboxes is not None,
+                },
+                inference_time_ms=result.inference_time_ms,
+                total_time_ms=total_time_ms,
+            )
+            
+        except Exception as e:
+            logger.exception(f"Native plugin inference failed: {e}")
+            return InspectionResult(
+                request_id=request_id,
+                app_id=app.app_id,
+                decision=DecisionResult.ERROR,
+                confidence=0.0,
+                anomaly_score=0.0,
+                details={"error": f"Native plugin inference failed: {e}"},
+                inference_time_ms=0.0,
+                total_time_ms=(time.perf_counter() - start_time) * 1000,
+            )
+    
+    def _inspect_script(
+        self,
+        app: AppInstance,
+        image: np.ndarray,
+        request_id: str,
+        start_time: float,
+    ) -> InspectionResult:
+        """Run inspection using script-based app (v1)"""
         # Run preprocessing
         try:
             input_tensor = app.preprocessing.process(image)
@@ -308,7 +407,7 @@ class AppManager:
             logger.exception(f"Preprocessing failed: {e}")
             return InspectionResult(
                 request_id=request_id,
-                app_id=app_id,
+                app_id=app.app_id,
                 decision=DecisionResult.ERROR,
                 confidence=0.0,
                 anomaly_score=0.0,
@@ -324,7 +423,7 @@ class AppManager:
             logger.exception(f"Inference failed: {e}")
             return InspectionResult(
                 request_id=request_id,
-                app_id=app_id,
+                app_id=app.app_id,
                 decision=DecisionResult.ERROR,
                 confidence=0.0,
                 anomaly_score=0.0,
@@ -342,11 +441,12 @@ class AppManager:
         # Build result
         result = InspectionResult(
             request_id=request_id,
-            app_id=app_id,
+            app_id=app.app_id,
             decision=decision,
             confidence=confidence,
             anomaly_score=output.anomaly_score,
             details={
+                "package_type": "script",
                 "class_scores": output.class_scores,
                 "class_label": output.class_label,
             },

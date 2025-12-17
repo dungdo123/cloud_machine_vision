@@ -1,0 +1,2 @@
+[console_scripts]
+mvas = mvas_cli.cli:main
